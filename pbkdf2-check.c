@@ -34,6 +34,7 @@
 #include "base64.h"
 
 #define SEPARATOR       "$"
+#define SEPARATOR2      "_"
 #define TRUE	(1)
 #define FALSE	(0)
 
@@ -50,7 +51,7 @@ static int detoken(char *pbkstr, char **sha, int *iter, char **salt, char **key)
 
 	save = s = strdup(pbkstr);
 
-	if ((p = strsep(&s, SEPARATOR)) == NULL)
+	if ((p = strsep(&s, SEPARATOR2)) == NULL)
 		goto out;
 	if (strcmp(p, "PBKDF2") != 0)
 		goto out;
@@ -165,7 +166,7 @@ int pbkdf2_check(char *password, char *hash)
 int main()
 {
         char password[] = "password";
-	char pbkstr[] = "PBKDF2$sha1$98$XaIs9vQgmLujKHZG4/B3dNTbeP2PyaVKySTirZznBrE=$2DX/HZDTojVbfgAIdozBi6CihjWP1+akYnh/h9uQfIVl6pLoAiwJe1ey2WW2BnT+";
+	char pbkstr[] = "PBKDF2_sha1$98$XaIs9vQgmLujKHZG4/B3dNTbeP2PyaVKySTirZznBrE=$2DX/HZDTojVbfgAIdozBi6CihjWP1+akYnh/h9uQfIVl6pLoAiwJe1ey2WW2BnT+";
 	int match;
 
 	printf("Checking password [%s] for %s\n", password, pbkstr);

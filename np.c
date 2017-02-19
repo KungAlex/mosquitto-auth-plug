@@ -38,6 +38,7 @@
 
 #define KEY_LENGTH      24
 #define SEPARATOR       "$"
+#define SEPARATOR2      "_"
 #define SALTLEN 12
 
 #define USAGE() fprintf(stderr, "Usage: %s [-i iterations] [-p password]\n", progname)
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
 
 	blen = base64_encode(key, KEY_LENGTH, &b64);
 	if (blen > 0) {
-		printf("PBKDF2$%s$%d$%s$%s\n",
+		printf("PBKDF2_%s$%d$%s$%s\n",
 			"sha256",
 			iterations,
 			salt,
