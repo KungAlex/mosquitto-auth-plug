@@ -517,36 +517,62 @@ the beginning of the line indicating a _superuser_)
 ## MongoDB
 The `mongo` back-end works with superuser and ACL checks with the following collections format.
 
-```
-users = {
-         username: "user",
-	     password: "PBKDF_string"
-	     topics: int (topicID location)
-	     superuser: int (1 true, 0 false)
-        }
+#### Users collection
 
-topics = {
-           _id: int,
-		   topics: ["xx/xx/#", "yy/#", ...]
-		 }
+Each user document must have a username, a hashed password, and at least one of:
+
+ - A superuser prop, allowing full access to all topics
+ - An embedded array containing a list of topics with full access
+ - A foreign key pointing to another document containing a list of topics
+ 
+You may use any combination of these options; authorisation will be granted if any check passes.
+
 ```
+{
+    username: string,
+    [location_password]: string, // A PBKDF2 hash, see 'Passwords' section
+    [location_topics]: int | oid | string, // reference to a document in collection_topics)
+    [user_embedded_topics_prop]: string[] | { [topic: string]: "r"|"w"|"rw" }, // see 'ACL format'
+    [location_superuser]: int | boolean // optional, superuser if truthy
+}
+```
+
+#### Topic groups collection (optional)
+
+If the user document references a separate topics document, that document should exist and must have the format:
+
+```
+{
+    [location_topicId]: int | oid | string, // unique id, as referenced by users[location_topics],
+    [location_topics]: string[] | { [topic: string]: "r"|"w"|"rw" } // see 'ACL format'
+}
+```
+
+#### ACL format
+
+Topics may be given as either an array of topic strings, eg `["topic1/#", "topic2/+"]`, in which case all topics will 
+be read-write, or as a sub-document mapping topic names to the strings `"r"`, `"w"`, `"rw"`, eg 
+`{ "article/#":"r", "article/+/comments":"rw", "ballotbox":"w" }`.
+
+#### Configuration
 
 The following `auth_opt_mongo_` options are supported by the mongo back-end:
 
-| Option             | default           | Meaning               |
-| ------------------ | ----------------- | --------------------- |
-| host               | localhost         | Hostname/Address
-| port               | 27017             | TCP port
-| user               |                   | Username
-| password           |                   | Password
-| authSource         |                   | Authentication Database Name
-| database           | mqGate            | Database Name
-| collection_users   | users             | Collection for User Documents
-| collection_topics  | topics            | Collection for Topic Documents
-| location_password  | password          | Password field name in User Document
-| location_topic     | topics            | Topic Document pointer field name in User Document
-| location_topicId  | _id               | Field name that location_topic points to in Topic Document
-| location_superuser | superuser         | Superuser field name in User Document
+| Option                     | default           | Meaning               |
+| -------------------------- | ----------------- | --------------------- |
+| host                       | localhost         | Hostname/Address
+| port                       | 27017             | TCP port
+| user                       |                   | MongoDB connection username
+| password                   |                   | MongoDB connection password
+| authSource                 |                   | MongoDB connection auth source
+| database                   | mqGate            | Database Name
+| collection_users           | users             | Collection for User Documents
+| collection_topics          | topics            | Collection for Topic Documents (optional if embedded topics are used)
+| location_password          | password          | Password field name in User Document
+| location_topic             | topics            | Topic Document pointer field name in User Document
+| location_topicId           | _id               | Field name that location_topic points to in Topic Document
+| location_superuser         | superuser         | Superuser field name in User Document
+| user_embedded_topics_prop  | topics            | Name of property on user doc containing an embedded topic list
 
 Mosquitto configuration for the `mongo` back-end:
 ```
@@ -554,8 +580,6 @@ auth_plugin /home/jpm/mosquitto-auth-plug/auth-plug.so
 auth_opt_mongo_host localhost
 auth_opt_mongo_port 27017
 ```
-currently no readwrite checks on ACL, all topics will be readwrite, do not add a flag to the array of topics in db.
-
 
 ## Passwords
 
